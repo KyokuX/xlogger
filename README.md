@@ -1,2 +1,2 @@
-# xlogger
-Android Log Tools
+# X Logger - An Android Log Tool
+=======
