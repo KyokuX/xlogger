@@ -3,6 +3,11 @@ package com.kyokux.android.library.xlogger;
 import android.text.TextUtils;
 import android.util.Log;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+
 /**
  * Created on 2016/09/30 10:16.
  *
@@ -14,6 +19,9 @@ public final class XLogger {
 
     private static boolean sEnable = true;
     private static String sTag = DEFAULT_TAG;
+    private static String mLogFileTag = null;
+
+    private static File mLogFile = null;
 
     /**
      * Set current log tag.
@@ -62,10 +70,7 @@ public final class XLogger {
      * @param message log message.
      */
     public static void v(String message) {
-        if (!sEnable) {
-            return;
-        }
-        Log.v(sTag, message);
+        v(sTag, message);
     }
 
     /**
@@ -74,10 +79,7 @@ public final class XLogger {
      * @param message log message.
      */
     public static void d(String message) {
-        if (!sEnable) {
-            return;
-        }
-        Log.d(sTag, message);
+        d(sTag, message);
     }
 
     /**
@@ -86,10 +88,7 @@ public final class XLogger {
      * @param message log message.
      */
     public static void i(String message) {
-        if (!sEnable) {
-            return;
-        }
-        Log.i(sTag, message);
+        i(sTag, message);
     }
 
     /**
@@ -98,10 +97,7 @@ public final class XLogger {
      * @param message log message.
      */
     public static void w(String message) {
-        if (!sEnable) {
-            return;
-        }
-        Log.w(sTag, message);
+        w(sTag, message);
     }
 
     /**
@@ -110,10 +106,7 @@ public final class XLogger {
      * @param message log message.
      */
     public static void e(String message) {
-        if (!sEnable) {
-            return;
-        }
-        Log.e(sTag, message);
+        e(sTag, message);
     }
 
     /**
@@ -126,6 +119,7 @@ public final class XLogger {
         if (!sEnable) {
             return;
         }
+        saveLogToFile(message, tag);
         Log.v(tag, message);
     }
 
@@ -139,6 +133,7 @@ public final class XLogger {
         if (!sEnable) {
             return;
         }
+        saveLogToFile(message, tag);
         Log.d(tag, message);
     }
 
@@ -152,6 +147,7 @@ public final class XLogger {
         if (!sEnable) {
             return;
         }
+        saveLogToFile(message, tag);
         Log.i(tag, message);
     }
 
@@ -165,6 +161,7 @@ public final class XLogger {
         if (!sEnable) {
             return;
         }
+        saveLogToFile(message, tag);
         Log.w(tag, message);
     }
 
@@ -178,7 +175,73 @@ public final class XLogger {
         if (!sEnable) {
             return;
         }
+        saveLogToFile(message, tag);
         Log.e(tag, message);
+    }
+
+    /**
+     * Begin to record follow-up logs to a specified file until call end.
+     *
+     * @param fileName log file name with absolute path.
+     * @return true if log begin, false otherwise.
+     */
+    public static boolean beginLogFile(String fileName) {
+        return beginLogFile(sTag, fileName);
+    }
+
+    public static boolean beginLogFile(String tag, String fileName) {
+        if (TextUtils.isEmpty(fileName) || TextUtils.isEmpty(tag)) {
+            return false;
+        }
+        File logFile = new File(fileName);
+        try {
+            if (!logFile.exists()) {
+                File parent = logFile.getParentFile();
+                if (parent == null) {
+                    parent = new File(logFile.getParent());
+                }
+                if (!parent.exists()) {
+                    parent.mkdirs();
+                }
+                if (!logFile.createNewFile()) {
+                    return false;
+                }
+            }
+        } catch(IOException e) {
+            e.printStackTrace();
+            return false;
+        }
+        mLogFile = logFile;
+        mLogFileTag = tag;
+        return true;
+    }
+
+    /**
+     * Stop record log to file.
+     */
+    public static void stopLogFile() {
+        mLogFile = null;
+        mLogFileTag = null;
+    }
+
+    private static void saveLogToFile(String message, String tag) {
+        if (mLogFile == null || TextUtils.isEmpty(mLogFileTag)) {
+            return;
+        }
+        if (!mLogFileTag.equals(tag)) {
+            return;
+        }
+        try {
+            BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(mLogFile, true));
+            bufferedWriter.write(message);
+            bufferedWriter.newLine();
+            bufferedWriter.flush();
+            bufferedWriter.close();
+            Log.d(tag, "save log success.");
+        } catch(IOException e) {
+            e.printStackTrace();
+            Log.d(tag, "save log failture: " + e.getLocalizedMessage());
+        }
     }
 
     private XLogger() {
